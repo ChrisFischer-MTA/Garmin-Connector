@@ -31,7 +31,6 @@ RUN printf "cd /opt/garmin/code \
 
 RUN cat /opt/garmin/start.sh
 RUN mkdir /root/.GarminDb
-RUN curl -o /root/.GarminDb/GarminConnectConfig.json https://github.com/tcgoetz/GarminDB/raw/master/garmindb/GarminConnectConfig.json.example
 
 ENTRYPOINT ["/bin/bash", "/opt/garmin/start.sh"]
 
