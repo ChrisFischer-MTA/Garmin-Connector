@@ -24,6 +24,7 @@ RUN cd /opt/garmin/code
 RUN git clone https://github.com/ChrisFischer-MTA/Garmin-Connector.git /opt/garmin/code
 RUN printf "cd /opt/garmin/code \
 \ngit pull \
+\ncp /opt/garmin/code/GarminConnectConfig.json ~/.GarminDb/
 \npython -m venv venv \
 \nsource venv/bin/activate \
 \npython -m pip install garmindb ipython snakemd ipyleaflet ipywidgets fastapi[standard] \
