@@ -1,0 +1,14 @@
+services:
+  garmin-fastapi-bridge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: garmin-fastapi-bridge
+    restart: always
+    environment:
+      - ONEAPI_DEVICE_SELECTOR=level_zero:0
+      - IPEX_LLM_NUM_CTX=16384
+    ports:
+      - 10821:8000
+    volumes:
+      - ./data:/opt/garmin/data
