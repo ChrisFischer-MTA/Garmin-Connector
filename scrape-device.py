@@ -7,16 +7,16 @@ import shutil
 # Location where the Garmin Watch is mounted
 GARMIN_STRING_LENGTH = len('GARMIN/') 
 # Location where the Garmin Watch data is copied too for the docker container
-DATA_STORE_LOCATION = './data/garminvolume'
+DATA_STORE_LOCATION = './data/garminvolume/garmin'
 # Location where we store FIT files in case the container hoses them.
 BACKUP_STORE_LOCATION = './backups'
 
 # Helper function for backing up and copying FIT files for processing.
-def copy_fit(*, fileName, GARMIN_DATA_STORE):
+def copy_fit(*, clonePath, fileName, GARMIN_DATA_STORE):
     # First, we copy to the backup.
-    shutil.copyfile(f'{GARMIN_DATA_STORE}{fileName}', f'{BACKUP_STORE_LOCATION}/{fileName}-{str(int(time.time()))}')
+    shutil.copyfile(f'{GARMIN_DATA_STORE}{clonePath}/{fileName}', f'{BACKUP_STORE_LOCATION}/{clonePath}/{fileName}-{str(int(time.time()))}')
     # Next, we copy to the file store
-    shutil.copyfile(f'{GARMIN_DATA_STORE}{fileName}', f'{DATA_STORE_LOCATION}/{fileName}')
+    shutil.copyfile(f'{GARMIN_DATA_STORE}{clonePath}/{fileName}', f'{DATA_STORE_LOCATION}/{clonePath.lower()}/{fileName}')
 
 def process_fit(path):
     pass
@@ -62,21 +62,22 @@ def main():
             # hardcoding. So, we can just say clone path is equal to . which is equivalent
             if(clone_path == ""):
                 cloth_path = '.'
-            if file_extension.lower() == '.fit':
+            if True:
                 # First, let's create the directories in the data store if they don't exist
-                if not os.path.exists(DATA_STORE_LOCATION+'/'+clone_path):
-                    os.makedirs(DATA_STORE_LOCATION+'/'+clone_path)
+                # XXX: The library we're using to parse incorrectly lowercases the directories. We must adopt this bad behavior
+                if not os.path.exists(DATA_STORE_LOCATION+'/'+clone_path.lower()):
+                    os.makedirs(DATA_STORE_LOCATION+'/'+clone_path.lower())
                 # Additionally, let's create the directories in the backup store if they don't exist
                 if not os.path.exists(BACKUP_STORE_LOCATION+'/'+clone_path):
                     os.makedirs(BACKUP_STORE_LOCATION+'/'+clone_path)
                 # If file is new and should be imported
-                if not os.path.exists(f'{DATA_STORE_LOCATION}/{clone_path}/{file}'):
-                    copy_fit(fileName = f'{clone_path}/{file}', GARMIN_DATA_STORE=target)
+                if not os.path.exists(f'{DATA_STORE_LOCATION}/{clone_path.lower()}/{file}'):
+                    copy_fit(clonePath = f'{clone_path}', fileName = f'{file}', GARMIN_DATA_STORE=target)
                 # If file is changed, delete the one in data and replace it.
                 elif hashlib.md5(open(f'{target}{clone_path}/{file}','rb').read()).hexdigest() \
-                    != hashlib.md5(open(f'{DATA_STORE_LOCATION}/{clone_path}/{file}','rb').read()).hexdigest():
-                    os.remove(f'{DATA_STORE_LOCATION}/{clone_path}/{file}')
-                    copy_fit(fileName = f'{clone_path}/{file}', GARMIN_DATA_STORE=target)
+                    != hashlib.md5(open(f'{DATA_STORE_LOCATION}/{clone_path.lower()}/{file}','rb').read()).hexdigest():
+                    os.remove(f'{DATA_STORE_LOCATION}/{clone_path.lower()}/{file}')
+                    copy_fit(clonePath = f'{clone_path}', fileName = f'{file}', GARMIN_DATA_STORE=target)
                     print(f'{target}{clone_path}/{file} is different')
                 else:
                     print(f'{target}{clone_path}/{file} is the same')

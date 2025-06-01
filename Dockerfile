@@ -30,7 +30,6 @@ RUN printf "cd /opt/garmin/code \
 \npython -m pip install garmindb ipython snakemd ipyleaflet ipywidgets fastapi[standard] \
 \npython -m fastapi dev --host 0.0.0.0 /opt/garmin/code/main.py" > /opt/garmin/start.sh
 
-RUN cat /opt/garmin/start.sh
 RUN mkdir /root/.GarminDb
 
 ENTRYPOINT ["/bin/bash", "/opt/garmin/start.sh"]
