@@ -7,6 +7,7 @@ from fastapi import FastAPI
 import fitfile
 from garmindb import GarminConnectConfigManager
 from garmindb.garmindb import GarminDb, Attributes, ActivitiesDb, Activities, StepsActivities, ActivityLaps, ActivityRecords
+import folium
 
 
 # Set up the DB we're interacting with
