@@ -2,6 +2,7 @@
 import os
 from typing import Union
 from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 
 # Garmin DB imports
 import fitfile
