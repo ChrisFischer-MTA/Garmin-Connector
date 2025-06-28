@@ -27,8 +27,8 @@ RUN printf "cd /opt/garmin/code \
 \ncp /opt/garmin/code/GarminConnectConfig.json ~/.GarminDb/ \
 \npython -m venv venv \
 \nsource venv/bin/activate \
-\npython -m pip install garmindb ipython snakemd ipyleaflet ipywidgets fastapi[standard] \
-\npython -m fastapi dev --host 0.0.0.0 /opt/garmin/code/main.py" > /opt/garmin/start.sh
+\npython -m pip install garmindb ipython snakemd ipyleaflet ipywidgets fastapi[standard] folium \
+\npython -m fastapi dev --host 0.0.0.0 /opt/garmin/code/main.py " > /opt/garmin/start.sh
 
 RUN mkdir /root/.GarminDb
 

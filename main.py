@@ -37,7 +37,7 @@ def getLocations():
             continue
         if map_locations.get(str(round(element.position_lat, 3))+'-'+str(round(element.position_long, 3))) is None:
             map_locations[str(round(element.position_lat, 3))+'-'+str(round(element.position_long, 3))] = True
-            returned_item[element.timestamp] = {'activity' : element.activity_id, 'position_lat' : element.position_lat, 'position_long' : element.position_long }
+            returned_item[element.timestamp] = {'activity' : element.activity_id, 'position_lat' : element.position_lat, 'position_long' : element.position_long, 'timestamp' : element.timestamp.strftime("%Y-%b-%d %H:%M") }
     return returned_item
 
 @app.get("/updateDB")
