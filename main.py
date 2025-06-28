@@ -23,10 +23,6 @@ unit_strings = fitfile.units.unit_strings[measurement_system]
 app = FastAPI()
 
 
-@app.get("/")
-def read_root():
-    return {"Hello": "World1"}
-
 @app.get("/getLocations")
 def getLocations():
     activities = ActivityRecords.get_all(garmin_act_db)
@@ -48,3 +44,19 @@ def updateDB():
 @app.get("/items/{item_id}")
 def read_item(item_id: int, q: Union[str, None] = None):
     return {"item_id": item_id, "q": q}
+
+@app.get("/")
+def read_root():
+    m = folium.Map()
+    activities = getLocations()
+    for element in activities:
+        activity = activities[element]
+        folium.Marker(
+            location=[activity['position_lat'], activity['position_long']],
+            popup=f"{activity['timestamp']} // {activity['activity']}",
+            icon=folium.Icon(),
+        ).add_to(m)
+    m.save('/tmp/index.html')
+    with open('/tmp/index.html') as index_file:
+        return HTMLResponse(index_file.read(), status_code=200)
+
