@@ -40,6 +40,7 @@ def getLocations():
 
 @app.get("/updateDB")
 def updateDB():
+    os.system('garmindb_cli.py -i -a ')
     os.system('garmindb_cli.py -c --analyze -A ')
     return {"status" : "Ran without returning error"}
 
