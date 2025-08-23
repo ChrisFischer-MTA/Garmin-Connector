@@ -4,17 +4,17 @@ ENV TZ=america/los_angeles
 
 
 # Base packages
-RUN apt update && \
-    apt install --no-install-recommends -q -y \
-    software-properties-common \
-    ca-certificates \
-    wget \
-    curl \
-    ocl-icd-libopencl1 \
-    python3-pip \
-    python3-venv \
-    git \
-    python-is-python3
+#RUN apt update && \
+#    apt install --no-install-recommends -q -y \
+#    software-properties-common \
+#    ca-certificates \
+#    wget \
+#    curl \
+#    ocl-icd-libopencl1 \
+#    python3-pip \
+#    python3-venv \
+#    git \
+#    python-is-python3
 
 # First, let's make the directory where we're going to work out of
 RUN mkdir /opt/garmin
