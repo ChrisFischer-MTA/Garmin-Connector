@@ -1,4 +1,4 @@
-FROM ubuntu:24.04
+FROM python:3.13-slim
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=america/los_angeles
 
@@ -21,14 +21,15 @@ RUN mkdir /opt/garmin
 RUN mkdir /opt/garmin/data
 RUN mkdir /opt/garmin/code
 RUN cd /opt/garmin/code
-#RUN git clone https://github.com/ChrisFischer-MTA/Garmin-Connector.git /opt/garmin/code
 COPY ./main.py /opt/garmin/code
+RUN pip install garmindb ipython snakemd ipyleaflet ipywidgets fastapi[standard] folium 
+
 RUN printf "cd /opt/garmin/code \
-\ngit pull \
-\ncp /opt/garmin/code/GarminConnectConfig.json ~/.GarminDb/ \
-\npython -m venv venv \
-\nsource venv/bin/activate \
-\npython -m pip install garmindb ipython snakemd ipyleaflet ipywidgets fastapi[standard] folium \
+#\ngit pull \
+#\ncp /opt/garmin/code/GarminConnectConfig.json ~/.GarminDb/ \
+#\npython -m venv venv \
+#\nsource venv/bin/activate \
+#\npython -m pip install garmindb ipython snakemd ipyleaflet ipywidgets fastapi[standard] folium \
 \npython -m fastapi dev --host 0.0.0.0 /opt/garmin/code/main.py " > /opt/garmin/start.sh
 
 RUN mkdir /root/.GarminDb
