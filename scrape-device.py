@@ -73,6 +73,7 @@ def main():
                 # If file is new and should be imported
                 if not os.path.exists(f'{DATA_STORE_LOCATION}/{clone_path.lower()}/{file}'):
                     copy_fit(clonePath = f'{clone_path}', fileName = f'{file}', GARMIN_DATA_STORE=target)
+                    print(f'Copying new file: {DATA_STORE_LOCATION}/{clone_path.lower()}/{file}')
                 # If file is changed, delete the one in data and replace it.
                 elif hashlib.md5(open(f'{target}{clone_path}/{file}','rb').read()).hexdigest() \
                     != hashlib.md5(open(f'{DATA_STORE_LOCATION}/{clone_path.lower()}/{file}','rb').read()).hexdigest():
@@ -80,8 +81,8 @@ def main():
                     copy_fit(clonePath = f'{clone_path}', fileName = f'{file}', GARMIN_DATA_STORE=target)
                     print(f'{target}{clone_path}/{file} is different')
                 else:
-                    print(f'{target}{clone_path}/{file} is the same')
-    
+                    #print(f'{target}{clone_path}/{file} is the same')
+                    pass
 
 if __name__ == "__main__":
     main()
