@@ -92,8 +92,9 @@ def getLocations():
 @app.get("/updateDB")
 def updateDB():
     """Trigger a database refresh by importing and analyzing new Garmin data."""
-    os.system('garmindb_cli.py -i -a ')
-    os.system('garmindb_cli.py -c --analyze -A ')
+    #os.system('garmindb_cli.py -i -a ')
+    #os.system('garmindb_cli.py -c --analyze -A ')
+    os.system('garmindb_cli.py --all --download --import --analyze --latest ')
     return {"status": "Ran without returning error"}
 
 
