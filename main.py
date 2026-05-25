@@ -16,7 +16,7 @@ gc_config = GarminConnectConfigManager()
 db_params_dict = gc_config.get_db_params()
 garmin_db = GarminDb(db_params_dict)
 garmin_act_db = ActivitiesDb(db_params_dict)
-measurement_system = Attributes.measurements_type(garmin_db)
+measurement_system = Attributes.measurements_type(garmin_db, default='imperial')
 unit_strings = fitfile.units.unit_strings[measurement_system]
 
 
