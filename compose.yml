@@ -7,6 +7,8 @@ services:
     restart: always
     environment:
       - DEBUG=False
+      - GARMIN_USERNAME=${GARMIN_USERNAME:-joe@shmoe.com}
+      - GARMIN_PASSWORD=${GARMIN_PASSWORD:-yourpassword}
     ports:
       - 10821:8000
     volumes:
