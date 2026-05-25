@@ -95,6 +95,7 @@ def updateDB():
     #os.system('garmindb_cli.py -i -a ')
     #os.system('garmindb_cli.py -c --analyze -A ')
     os.system('garmindb_cli.py --all --download --import --analyze --latest ')
+    print('concluded update!')
     return {"status": "Ran without returning error"}
 
 
