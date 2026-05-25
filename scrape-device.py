@@ -1,41 +1,68 @@
+"""
+Garmin Device Scraper
+
+Copies FIT files from a mounted Garmin watch to both a local data store
+(for container processing) and a backup directory. Files are compared by
+MD5 hash to avoid redundant copies.
+
+Usage:
+    Run from the repository root where ./data and ./backups are accessible.
+"""
+
 import os
 import hashlib
 import time
 import shutil
 
 # Constants
-# Location where the Garmin Watch is mounted
-GARMIN_STRING_LENGTH = len('GARMIN/') 
-# Location where the Garmin Watch data is copied too for the docker container
+# Length of the 'GARMIN/' prefix used when parsing mount paths.
+GARMIN_STRING_LENGTH = len('GARMIN/')
+# Location where the Garmin Watch data is copied to for the docker container.
 DATA_STORE_LOCATION = './data/garminvolume/garmin'
-# Location where we store FIT files in case the container hoses them.
+# Location where we store FIT files as a safety backup in case the container
+# corrupts or loses the data store.
 BACKUP_STORE_LOCATION = './backups'
 
-# Helper function for backing up and copying FIT files for processing.
+
 def copy_fit(*, clonePath, fileName, GARMIN_DATA_STORE):
-    # First, we copy to the backup.
-    shutil.copyfile(f'{GARMIN_DATA_STORE}{clonePath}/{fileName}', f'{BACKUP_STORE_LOCATION}/{clonePath}/{fileName}-{str(int(time.time()))}')
-    # Next, we copy to the file store
-    shutil.copyfile(f'{GARMIN_DATA_STORE}{clonePath}/{fileName}', f'{DATA_STORE_LOCATION}/{clonePath.lower()}/{fileName}')
+    """Copy a FIT file to both the backup and data store directories."""
+    # Back up the original file with a Unix timestamp suffix for versioning.
+    shutil.copyfile(
+        f'{GARMIN_DATA_STORE}{clonePath}/{fileName}',
+        f'{BACKUP_STORE_LOCATION}/{clonePath}/{fileName}-{str(int(time.time()))}',
+    )
+    # Copy to the data store (lowercased path to match garmindb expectations).
+    shutil.copyfile(
+        f'{GARMIN_DATA_STORE}{clonePath}/{fileName}',
+        f'{DATA_STORE_LOCATION}/{clonePath.lower()}/{fileName}',
+    )
+
 
 def process_fit(path):
+    """Placeholder for future FIT file processing logic."""
     pass
 
-# Retrieves the watches' directory path on the host
+
 def get_watch_path():
-    # First, let's detect if the watch is plugged in
+    """Detect and return the Garmin watch mount path under /media.
+
+    Walks /media looking for a directory containing 'GARMIN/'. Returns the
+    path up to and including the first 'GARMIN/' segment. This is safe even
+    if nested GARMIN directories exist because we truncate at the first match.
+    """
     directory_tree = os.walk('/media')
-    garmin_directory_path = None
-    # XXX: Is it a safe assumption that we will always get the upper level directories first?
-    # Handling for now by proactively chopping off everything past the first GARMIN.
     for element in directory_tree:
-        if(len(element) > 0 and 'GARMIN/' in element[0]):
-            # Let's find the first instance of Garmin and chop everything past that off
+        if len(element) > 0 and 'GARMIN/' in element[0]:
+            # Truncate at the first 'GARMIN/' occurrence. os.walk returns
+            # directories in top-down order by default, so the first match
+            # is the shallowest (most correct) path.
             return element[0][0:element[0].index('GARMIN/') + GARMIN_STRING_LENGTH] + 'GARMIN/'
     return None
-    
+
+
 def main():
-    # First, we should do a sanity check to ensure that we're being run from the correct directory.
+    """Main entry point: validate environment, detect watch, and sync files."""
+    # Sanity checks: ensure required directories are reachable.
     if not os.path.exists(DATA_STORE_LOCATION):
         print("I can't see the local Garmin Data store. Ensure you're running me out of the correct directory!")
         return
@@ -45,44 +72,48 @@ def main():
 
     target = get_watch_path()
     if target is None:
-        # No watch found, exit the script
+        # No watch found, exit the script.
         return 0
-    # Now, let's diff the directories. Each file should be categorized one of three ways
-    # (1) File is new and should be imported
-    # (2) File is changed and should be imported with a suffix
-    # (3) File is already imported.
-    # Additionally, we want a store of FIT files. We will store that in "backup/"
+
+    # Walk the watch filesystem and sync each file to local stores.
+    # Files are categorized as:
+    #   (1) New — copy to both data store and backup.
+    #   (2) Changed (different MD5) — replace in data store and back up.
+    #   (3) Unchanged — skip.
     for subdir, dirs, files in os.walk(target):
         for file in files:
-            file_extension = os.path.splitext(os.path.join(subdir, file))[1]
-            full_file_path = os.path.join(subdir, file) # Ex: /home/username/projects/garmin-fit/fit-mnt/GARMIN-backup/GARMIN/Records/Records.fit
-            clone_path = subdir[len(target):] # all directories after GARMIN/GARMIN Ex: /Records
-            # This is a very hacky linux trick. If something's in the root of the watch,
-            # clone path is NULL. If clone path is NULL, we double slash later on due to 
-            # hardcoding. So, we can just say clone path is equal to . which is equivalent
-            if(clone_path == ""):
-                cloth_path = '.'
-            if True:
-                # First, let's create the directories in the data store if they don't exist
-                # XXX: The library we're using to parse incorrectly lowercases the directories. We must adopt this bad behavior
-                if not os.path.exists(DATA_STORE_LOCATION+'/'+clone_path.lower()):
-                    os.makedirs(DATA_STORE_LOCATION+'/'+clone_path.lower())
-                # Additionally, let's create the directories in the backup store if they don't exist
-                if not os.path.exists(BACKUP_STORE_LOCATION+'/'+clone_path):
-                    os.makedirs(BACKUP_STORE_LOCATION+'/'+clone_path)
-                # If file is new and should be imported
-                if not os.path.exists(f'{DATA_STORE_LOCATION}/{clone_path.lower()}/{file}'):
-                    copy_fit(clonePath = f'{clone_path}', fileName = f'{file}', GARMIN_DATA_STORE=target)
-                    print(f'Copying new file: {DATA_STORE_LOCATION}/{clone_path.lower()}/{file}')
-                # If file is changed, delete the one in data and replace it.
-                elif hashlib.md5(open(f'{target}{clone_path}/{file}','rb').read()).hexdigest() \
-                    != hashlib.md5(open(f'{DATA_STORE_LOCATION}/{clone_path.lower()}/{file}','rb').read()).hexdigest():
-                    os.remove(f'{DATA_STORE_LOCATION}/{clone_path.lower()}/{file}')
-                    copy_fit(clonePath = f'{clone_path}', fileName = f'{file}', GARMIN_DATA_STORE=target)
-                    print(f'{target}{clone_path}/{file} is different')
-                else:
-                    #print(f'{target}{clone_path}/{file} is the same')
-                    pass
+            full_file_path = os.path.join(subdir, file)
+            # Relative path after the watch root, e.g. "/Activity"
+            clone_path = subdir[len(target):]
+            # If the file lives at the root of GARMIN/, clone_path is empty.
+            # Use '.' to avoid double-slash issues in path construction.
+            if clone_path == "":
+                clone_path = '.'
+
+            # Ensure destination directories exist in both stores.
+            # Note: garmindb expects lowercased directory names, so we
+            # lowercase the data store path while keeping backup paths intact.
+            if not os.path.exists(DATA_STORE_LOCATION + '/' + clone_path.lower()):
+                os.makedirs(DATA_STORE_LOCATION + '/' + clone_path.lower())
+            if not os.path.exists(BACKUP_STORE_LOCATION + '/' + clone_path):
+                os.makedirs(BACKUP_STORE_LOCATION + '/' + clone_path)
+
+            data_store_file = f'{DATA_STORE_LOCATION}/{clone_path.lower()}/{file}'
+
+            if not os.path.exists(data_store_file):
+                # New file — import it.
+                copy_fit(clonePath=clone_path, fileName=file, GARMIN_DATA_STORE=target)
+                print(f'Copying new file: {data_store_file}')
+            elif (
+                hashlib.md5(open(f'{target}{clone_path}/{file}', 'rb').read()).hexdigest()
+                != hashlib.md5(open(data_store_file, 'rb').read()).hexdigest()
+            ):
+                # File changed — replace existing copy.
+                os.remove(data_store_file)
+                copy_fit(clonePath=clone_path, fileName=file, GARMIN_DATA_STORE=target)
+                print(f'{target}{clone_path}/{file} is different')
+            # else: file unchanged, nothing to do.
+
 
 if __name__ == "__main__":
     main()
