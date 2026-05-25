@@ -16,6 +16,8 @@ Approach for City View / Geofencing:
 
 import os
 import math
+import threading
+import subprocess
 from typing import Union
 from collections import defaultdict
 from fastapi import FastAPI
@@ -47,6 +49,12 @@ CITY_CLUSTER_PRECISION = 1
 CITY_BASE_RADIUS = 3000
 
 app = FastAPI()
+
+# --- Background update state ---
+# Prevents concurrent updateDB runs and allows the long-running garmindb
+# command to complete even if the HTTP client times out.
+_update_lock = threading.Lock()
+_update_running = False
 
 
 def _add_tile_layers(m: folium.Map) -> None:
@@ -91,12 +99,37 @@ def getLocations():
 
 @app.get("/updateDB")
 def updateDB():
-    """Trigger a database refresh by importing and analyzing new Garmin data."""
-    #os.system('garmindb_cli.py -i -a ')
-    #os.system('garmindb_cli.py -c --analyze -A ')
-    os.system('garmindb_cli.py --all --download --import --analyze --latest ')
-    print('concluded update!')
-    return {"status": "Ran without returning error"}
+    """Trigger a database refresh by importing and analyzing new Garmin data.
+
+    The garmindb update command can take 5-10 minutes.  To avoid failures when
+    the HTTP client times out before the command finishes, the update is run in
+    a daemon background thread so it always runs to completion.
+
+    A module-level flag (guarded by a lock) ensures that at most one update
+    process runs at a time.  Concurrent calls return immediately with a
+    "already in progress" status rather than spawning a second process.
+    """
+    global _update_running
+
+    with _update_lock:
+        if _update_running:
+            return {"status": "Update already in progress"}
+        _update_running = True
+
+    def _run_update():
+        global _update_running
+        try:
+            subprocess.run(
+                ['garmindb_cli.py', '--all', '--download', '--import', '--analyze', '--latest'],
+            )
+            print('concluded update!')
+        finally:
+            with _update_lock:
+                _update_running = False
+
+    thread = threading.Thread(target=_run_update, daemon=True)
+    thread.start()
+    return {"status": "Update started"}
 
 
 @app.get("/items/{item_id}")
