@@ -22,14 +22,14 @@ RUN mkdir /opt/garmin/data
 RUN mkdir /opt/garmin/code
 RUN cd /opt/garmin/code
 COPY ./main.py /opt/garmin/code
+COPY ./GarminConnectConfig.json /opt/garmin/code
 RUN pip install garmindb ipython snakemd ipyleaflet ipywidgets fastapi[standard] folium 
 
+ENV GARMIN_USERNAME=joe@shmoe.com
+ENV GARMIN_PASSWORD=yourpassword
+
 RUN printf "cd /opt/garmin/code \
-#\ngit pull \
-#\ncp /opt/garmin/code/GarminConnectConfig.json ~/.GarminDb/ \
-#\npython -m venv venv \
-#\nsource venv/bin/activate \
-#\npython -m pip install garmindb ipython snakemd ipyleaflet ipywidgets fastapi[standard] folium \
+\npython3 -c \"import json, os; c=json.load(open('/opt/garmin/code/GarminConnectConfig.json')); c['credentials']['user']=os.environ.get('GARMIN_USERNAME', c['credentials']['user']); c['credentials']['password']=os.environ.get('GARMIN_PASSWORD', c['credentials']['password']); json.dump(c, open('/root/.GarminDb/GarminConnectConfig.json', 'w'), indent=4)\" \
 \npython -m fastapi dev --host 0.0.0.0 /opt/garmin/code/main.py " > /opt/garmin/start.sh
 
 RUN mkdir /root/.GarminDb
