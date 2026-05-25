@@ -9,6 +9,7 @@ from garmindb import GarminConnectConfigManager
 from garmindb.garmindb import GarminDb, Attributes, ActivitiesDb, Activities, StepsActivities, ActivityLaps, ActivityRecords
 import fitfile
 import folium
+from folium.plugins import MarkerCluster
 
 
 # Set up the DB we're interacting with
@@ -29,12 +30,12 @@ app = FastAPI()
 def getLocations():
     activities = ActivityRecords.get_all(garmin_act_db)
     returned_item = {}
-    map_locations = {}
+    seen_activities = set()
     for element in activities:
         if element.position_lat is None or element.position_long is None:
             continue
-        if map_locations.get(str(round(element.position_lat, 3))+'-'+str(round(element.position_long, 3))) is None:
-            map_locations[str(round(element.position_lat, 3))+'-'+str(round(element.position_long, 3))] = True
+        if element.activity_id not in seen_activities:
+            seen_activities.add(element.activity_id)
             returned_item[element.timestamp] = {'activity' : element.activity_id, 'position_lat' : element.position_lat, 'position_long' : element.position_long, 'timestamp' : element.timestamp.strftime("%Y-%b-%d %H:%M") }
     return returned_item
 
@@ -51,6 +52,7 @@ def read_item(item_id: int, q: Union[str, None] = None):
 @app.get("/")
 def read_root():
     m = folium.Map()
+    cluster = MarkerCluster().add_to(m)
     activities = getLocations()
     for element in activities:
         activity = activities[element]
@@ -58,7 +60,7 @@ def read_root():
             location=[activity['position_lat'], activity['position_long']],
             popup=f"{activity['timestamp']} // {activity['activity']}",
             icon=folium.Icon(),
-        ).add_to(m)
+        ).add_to(cluster)
     m.save('/tmp/index.html')
     with open('/tmp/index.html') as index_file:
         return HTMLResponse(index_file.read(), status_code=200)
