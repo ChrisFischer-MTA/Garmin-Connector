@@ -5,9 +5,9 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
 # Garmin DB imports
-import fitfile
 from garmindb import GarminConnectConfigManager
 from garmindb.garmindb import GarminDb, Attributes, ActivitiesDb, Activities, StepsActivities, ActivityLaps, ActivityRecords
+import fitfile
 import folium
 
 
