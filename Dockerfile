@@ -28,11 +28,14 @@ RUN pip install garmindb ipython snakemd ipyleaflet ipywidgets fastapi[standard]
 ENV GARMIN_USERNAME=joe@shmoe.com
 ENV GARMIN_PASSWORD=yourpassword
 
-RUN printf "cd /opt/garmin/code \
+RUN printf "#!/bin/bash\ncd /opt/garmin/code \
 \npython3 -c \"import json, os; c=json.load(open('/opt/garmin/code/GarminConnectConfig.json')); c['credentials']['user']=os.environ.get('GARMIN_USERNAME', c['credentials']['user']); c['credentials']['password']=os.environ.get('GARMIN_PASSWORD', c['credentials']['password']); json.dump(c, open('/root/.GarminDb/GarminConnectConfig.json', 'w'), indent=4)\" \
-\ngarmindb_cli.py -d -l -a \
-\ngarmindb_cli.py --rebuild_db \
-\npython -m fastapi dev --host 0.0.0.0 /opt/garmin/code/main.py " > /opt/garmin/start.sh
+\nwhile true; do \
+\n  garmindb_cli.py -d -l -a \
+\n  garmindb_cli.py --rebuild_db \
+\n  timeout 86400 python -m fastapi dev --host 0.0.0.0 /opt/garmin/code/main.py || true \
+\ndone" > /opt/garmin/start.sh && chmod +x /opt/garmin/start.sh
+
 
 RUN mkdir /root/.GarminDb
 
